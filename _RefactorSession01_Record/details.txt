@@ -1,0 +1,88 @@
+0425
+
+Python Document:
+    Record.py (_ORIGINAL)
+LOC:
+    Approx 43 - 81
+(LOC from original, with prospect refactoring comments subject to change)
+
+The smell identified is both duplicate code and primitive obsession.
+The need to keep Record's integer attributes valid has influenced common
+ behaviour onto the accessor, setter-methods.
+Each of the integer setter-methods practically has the same behaviour, a
+ somewhat complex operation to approve of the new specified value.
+Because these integer-attributes are bound to some behaviour/guarantee, it is
+ worth segregating them from primitive integers: Give them their own
+ type/class.
+
+The duplicate pattern in Python:
+
+    def setIncome(self, newIncome):
+        trial = None
+        if isinstance(newIncome, int):
+            trial = newIncome
+        elif isinstance(newIncome, str):
+            try:
+                trial = int(newIncome)
+            except ValueError:
+                pass
+        if trial is not None and (0 <= trial <= 999):
+            self._income = trial
+
+
+This can become a class. Therefore, Record class would refer to three
+ instances of the proposed class for each of its controlled integer
+ attributes.
+The differences in practical-duplications of the method above are the naming
+ of attributes, parameters, and the limits of the integer.
+
+
+Initial method to determine the new class:
+- What will remain fixed for an instance?
+  - 
+- What can be changed for an instance?
+- What did this duplicate-method provide overall?
+  - A guarantee that the integer is always within limit, error trapping
+
+https://sourcemaking.com/refactoring/replace-data-value-with-object
+The refactoring technique would replace data value with object.
+SourceMaking recommends that setting the value of the (original) class'
+ attribute would actually instantiate a new object (of the attribute type).
+Instead, it will be more ideal to keep each attribute object persistent to
+ the lifetime of the Record object. This is because the whole purpose of the
+ original setter-methods was to only assign the new value if it was deemed
+ valid. When the instance of int-attribute object is created, its limits are
+ set, and its value can always be changed.
+If the int-attribute object had to be reconstructed upon each successful use
+ of the relevant Record setter-methods, then the constructor would have to
+ take:
+    def __init__(self, newValue, lowLimit, highLimit):
+ which then still requires each setter-method to implement their own
+ conditional statement, and/or error handling statement (the specialised
+ int-attribute class would need the potential to raise an error in the
+ constructor).
+As a draft conclusion, the attribute instance that is persistent for the
+ lifetime of the Record instance is expected to be the best solution.
+
+
+class LimitedInt(object):
+
+    def __init__(self, lowLimit, highLimit):
+        self._low = int(min(lowLimit, highLimit))
+        self._high = int(max(lowLimit, highLimit))
+        self._value = self._low
+
+    def set(self, newValue):
+        trial = None
+        if isinstance(newValue, int):
+            trial = newValue
+        elif isinstance(newValue, str):
+            try:
+                trial = int(newValue)
+            except ValueError:
+                pass
+        if trial is not None and (self._low <= trial <= self._high):
+            self._value = trial
+
+    def get(self):
+        return self._value

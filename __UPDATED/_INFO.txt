@@ -1,0 +1,4 @@
+This is the program during redevelopment
+
+Some modules might not get changed from their original state, so modules that have been refactored, updated and/or added will contain a comment stylised:
+# UPDATE: REFACTORED (DATE)
