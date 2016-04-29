@@ -1,4 +1,4 @@
 These modules have been adapted from the original ERP.
 
-There has only been modification to importing matplotlib
-- Error trapping if matplotlib is unavailable
+Modifications done (such as carefully reducing encapsulation) are to support
+ testing.

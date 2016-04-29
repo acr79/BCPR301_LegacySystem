@@ -1,0 +1,56 @@
+0426
+
+Python Document:
+    RecordCollection.py (original)
+LOC:
+    Approx 91
+(LOC from original, with prospect refactoring comments subject to change)
+
+The code smell identified is a long method, which also bears a long parameter
+ list. The method is about 25 logical LOC long, which may be interpreted as
+ too long, but the programmer beleives that the complexity of the method is
+ worth breaking into smaller methods, with the addition of trying to reduce
+ the number of input parameters (originally 8).
+
+The first smell to treat will be the long parameter list, because it is
+ expected that this smell would be more likely to be treatable. Breaking down
+ the long method will then work around whatever the solution is proposed to be
+ for the method's parameters.
+
+Because the method to be altered will have its parameters changed and is
+ a public method of RecordCollection, unit testing before and after the
+ refactoring session will have to interact with Controller instead. Even so,
+ looking ahead the programmer has identified Controller as another bad smell,
+ as too large a class, so testing (for this section) may have to be reviewed
+ if Controller is to undergo changes.
+
+Original parameters in Python:
+    def addRecord(self, newID, newGender, newAge, newSales, newBMI, newIncome,
+                  autoID, overwrite):
+
+(self is excluded in the discussion)
+The refactoring method that seems viable is to preserve whole object.
+The first six parameters are the details of a prospective record, so it might
+ pay to design some class to hold these values. The last two parameters could
+ be included as attributes for the new class, though the caller of this method
+ (RecordCollection.addRecord()) can be made to implement an interface, so the
+ values for autoID and overwrite can be accessed by a method each.
+
+Additionally, this creates a need for an interface, of Record. It will be
+ named RecordInterface. Currently, Controller can refer to Record, it can use
+ its getter access-methods. It seems that Controller can create a Record
+ object and pass it to RecordCollection.addRecord(), but Controller is not
+ concerned with creation of Record objects: Part of its behaviour is to let
+ RecordCollection validate the addition of a Record.
+
+For example, RecordCollection specifies the ID scheme, and knows that Record
+ takes ID and gender in its constructor. In draft conclusion, it would be
+ ideal to let Controller only be aware of RecordInterface.
+
+class RecordInterface(metaclass=ABCMeta):
+
+    
+
+For the long parameter list, Controller can create an instance of a class
+ named RecordProspect, which implements RecordInterface; it will have the same
+ accessor-methods as Record. 

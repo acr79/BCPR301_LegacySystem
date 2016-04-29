@@ -2,7 +2,7 @@ import cmd
 from CustomException import CustomException
 from RecordCollection import RecordCollection
 from Option import Option
-from View import View
+from AbstractView import AbstractView
 from GlobalMethod import safeInt
 
 class ViewException(CustomException):
@@ -22,7 +22,7 @@ class Controller(cmd.Cmd):
 
     def __init__(self, newView, newRecordColl=None):
         super(Controller, self).__init__()
-        if not isinstance(newView, View):
+        if not isinstance(newView, AbstractView):
             raise ViewException()
         self.prompt = "ERP "
         self._myView = newView
@@ -290,8 +290,12 @@ from that\n")
         import os
         if not os.path.isfile(arg):  # protection from overwriting files
             try:
-                with open(arg, 'wb') as f:
-                    pickle.dump(self._theColl, f)
+                # with open(arg, 'wb') as f:
+                #     pickle.dump(self._theColl, f)
+                theFile = open(arg, 'wb')
+                pickle.dump(self._theColl, theFile)
+                theFile.close()
+                
             except IOError as e:
                 self._myView.show("EXCEPTION: {}\n".format(str(e)))
         else:

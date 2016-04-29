@@ -10,17 +10,6 @@ class InvalidGenderException(CustomException):
     def __init__(self, theReason="Invalid Gender"):
         super(InvalidGenderException, self).__init__(theReason)
 
-# SMELL: Duplicate Code
-# SMELL? Primitive Obsession
-# # setAge()
-# # setSales()
-# # setIncome()
-# These methods practically have the same behaviour pattern
-# Initial idea: Create a class for the stylised int attribute,
-#  so (in this version) Record would have three instances
-# # _age : SpecialInt
-# # _sales : SpecialInt
-# # _income : SpecialInt
 
 class Record(object):
 

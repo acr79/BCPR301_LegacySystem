@@ -1,3 +1,8 @@
+from AbstractView import AbstractView
+
+def getViewClass():
+    return View
+
 class DudViewPlot(object):
 
     def bar(self, *args):
@@ -16,11 +21,10 @@ except ImportError:
     viewPlot = DudViewPlot()
 
 
-class View(object):
+class View(AbstractView):
 
-    def __init__(self, message=None):
-        if message is not None:
-            print(message)
+    def __init__(self):
+        self._viewPlot = globals()["viewPlot"]
 
     def show(self, message):
         print(message)
@@ -29,9 +33,8 @@ class View(object):
         input("- Enter to continue -")
 
     def barChart(self, labels, values):
-
-        viewPlot.bar(range(len(labels)), values)
-        viewPlot.show()
+        self._viewPlot.bar(range(len(labels)), values)
+        self._viewPlot.show()
 
     def pieChart(self, data):
         if isinstance(data, list):
@@ -42,5 +45,5 @@ class View(object):
                     l, v = d
                     theLabels.append(l)
                     theValues.append(v)
-            viewPlot.pie(theValues, labels=theLabels)
-            viewPlot.show()
+            self._viewPlot.pie(theValues, labels=theLabels)
+            self._viewPlot.show()

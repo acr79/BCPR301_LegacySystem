@@ -1,7 +1,7 @@
 0425
 
 Python Document:
-    Record.py (_ORIGINAL)
+    Record.py (original)
 LOC:
     Approx 43 - 81
 (LOC from original, with prospect refactoring comments subject to change)

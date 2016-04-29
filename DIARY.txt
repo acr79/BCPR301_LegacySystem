@@ -9,18 +9,23 @@ BCPR301
 - Only additions will be comments
 
 Implementing improved, refactored modules
-- There will be one proven set of modules, for example until modifcations are made the set will be identical to _ORIGINAL
+- There will be one proven set of modules, for example until modifcations are
+   made the set will be identical to _ORIGINAL
 - When Working with a class/module, do not work directly on the proven set.
-  - Instead work on the module an its unit test under modification in a separate domain.
-  - When the unit test passes, reimplement it into the proven set, and (re)perform any additional tests that address the proven test.
-  - In the case where more than one module must up for the modification, all tasks need to be applied to those modules at each step in the cycle.
+  - Instead work on the module an its unit test under modification in a
+     separate domain.
+  - When the unit test passes, reimplement it into the proven set, and
+     (re)perform any additional tests that address the proven test.
+  - In the case where more than one module must up for the modification, all
+     tasks need to be applied to those modules at each step in the cycle.
 
 
 2016-04-25
 
 There are two versions of the ERP.
 - One in __ORIGINAL directory: The state of the program prior to refactoring
-- One in __UPDATED directory: The modified version of the program. It is up for changes during this assignment
+- One in __UPDATED directory: The modified version of the program. It is up
+   for changes during this assignment
 
 The details of refactoring will exist outside of these directories.
 Each refactoring session will have its own directory and include:
@@ -28,18 +33,56 @@ Each refactoring session will have its own directory and include:
 - A diary outlining the details of refactoring, such as:
   - Which module the code smell has been found in
   - Detailed discussion on how to treat the code smell
-- A coverage report (that can be expected to change as the Coverage program gets used)
+- A coverage report (that can be expected to change as the Coverage program
+   gets used)
 
-Because the unit tests in this assignement will have to test both the orignal and updated modules, it is necessary to select which version is to be tested (when running the test).
-The initial solution is to, by command-line argument, specify the directory of the module to be tested.
+Because the unit tests in this assignement will have to test both the orignal
+ and updated modules, it is necessary to select which version is to be tested
+ (when running the test). The initial solution is to, by command-line
+ argument, specify the directory of the module to be tested.
 - In the unit test module, this gets appended to:
     sys.path
-This is because modules that exist in both __ORIGINAL and __UPDATED will have the same name.
-Towards completion of the assignment, the programmer will seek advice from the tutor on how to structure the final solution of unit tests.
+This is because modules that exist in both __ORIGINAL and __UPDATED will have
+ the same name. Towards completion of the assignment, the programmer will seek
+ advice from the tutor on how to structure the final solution of unit tests.
 
 Coverage:
-Using Coverage for each affected module, as exercised by its relevant unit test.
-The current method of running Coverage via cmd is:
-coverage run --include=<module to be tested> <unit test for the module> <directory of module to be tested>
-The modules get stated as filenames.
-The working directory would preferably be the one that contains the unit test
+Using Coverage for each affected module, as exercised by its relevant unit
+ test. The current method of running Coverage via cmd is:
+
+coverage run --include=<module to be tested> <unit test for the module>
+ <directory of module to be tested>
+
+The modules get stated as filenames. The working directory would preferably be
+ the one that contains the unit test
+
+
+2016-04-29
+
+A lot of changes have been made to the class schema in __ORIGINAL. It has been
+ almost controversial, but the behaviour of the original ERP is still intact.
+
+These changes have not been a result of official refactoring! They have been
+ efforts to support the testing of the Controller class, which includes the
+ ability to supply a view entity that can log the message deliveries using the
+ show(message) method. For this to happen, hard encapsulation has been
+ sacrificed, as theController (of type Controller) originating from the
+ RunMain module can simply be referenced by calling RunMain.theController.
+
+The current proposal is to refactor the filer methods into an additional
+ class, which involves testing at RunMain. The behaviour so far is that
+ Controller exercises three key filer methods, without need to provide
+ sentimental return signals to any other object except for making calls to
+ View.show(). This is why there is a need for:
+- AbstractView, an abstract class that Controller can rely on
+- View and TestView implementing AbstractView
+- The option to specify a view module that contains an implementation of
+   AbstractView at RunMain (using "VIEW:<module>" as either a cmd argument
+   or as a list [] entry for RunMain.main(boolean, list)).
+  - Ultimately, the optional view (if specified) will be passed to
+     Controller's constructor rather than standard View.
+
+The programmer has changed the __ORIGINAL class schema to probably the most
+ tolerable limit where it still exerts original behaviour, in order for it to
+ be testable, so as to prove that the official, refactored program can use and
+ pass the established tests.
