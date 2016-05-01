@@ -86,3 +86,26 @@ The programmer has changed the __ORIGINAL class schema to probably the most
  tolerable limit where it still exerts original behaviour, in order for it to
  be testable, so as to prove that the official, refactored program can use and
  pass the established tests.
+
+
+2016-05-01
+
+The programmer had to remove the stalling functionality from the ERP. Very
+ insignificant, and its implementation really makes the refactoring process
+ much more complex. Stalling was simply concerned with pausing the output of
+ CLI, nothing more. This involved yet again changes to __ORIGINAL.
+
+Three code smells have been refactored; the switch statement and primitive
+ obsession ones have been treated well. The large class smell had been treated
+ only slightly with the introduction of a Filer class, the Controller class
+ still appears to have a lot going on in terms of what it is doing in its
+ methods. However, positive side effects have occurred from unit testing the
+ filer functionality, which included a major change as to how the program
+ initialises. As stated in a previous session, these changes are not
+ officially recognised as the assessed refactoring effort, because these
+ changes had to occur in __ORIGINAL to set a testable benchmark: Beforehand,
+ the hard encapsulation was percieved as too difficult to unit test,
+ especially for the crucial method of loading a RecordCollection via pickle
+ before the construction of a Controller.
+
+The programmer will make an effort to treat one more bad smell.

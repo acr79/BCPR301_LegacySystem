@@ -2,8 +2,11 @@ import cmd
 from CustomException import CustomException
 from RecordCollection import RecordCollection
 from Option import Option
+from Filer import Filer
 from AbstractView import AbstractView
+from AbstractController import AbstractController
 from GlobalMethod import safeInt
+
 
 class ViewException(CustomException):
 
@@ -17,8 +20,7 @@ class InsufficientArgumentsException(CustomException):
         super(InsufficientArgumentsException, self).__init__(theReason)
 
 
-# SMELL: Large Class
-class Controller(cmd.Cmd):
+class Controller(cmd.Cmd, AbstractController):
 
     def __init__(self, newView, newRecordColl=None):
         super(Controller, self).__init__()
@@ -35,8 +37,6 @@ used when adding records")
 ID is specified when adding a record, the original record with the same \
 ID is removed (this overpowers auto ID)", "No records will be removed \
 when adding records")
-        self._options["STALL"] = Option("Stall", "ERP view stalls (waits for \
-your acknowledgement) in some activities", "ERP view flows naturally")
         if (newRecordColl is not None and
                 isinstance(newRecordColl, RecordCollection)):
             self._theColl = newRecordColl
@@ -55,10 +55,6 @@ your acknowledgement) in some activities", "ERP view flows naturally")
                                     self._options["OVERWRITE"].isOn())
         else:
             raise InsufficientArgumentsException()
-
-    def _stall(self):
-        if self._options["STALL"].isOn():
-            self._myView.stall()
 
     def _representRecord(self, theRecord):
         self._myView.show("ID: {}\nGENDER: {}\nAGE: {}\nSALES: {}\nBMI: {}\
@@ -82,7 +78,6 @@ your acknowledgement) in some activities", "ERP view flows naturally")
         self._selectedOption = None
         self._myView.show("Selected Record")
         self._representRecord(self._selectedRecord)
-        self._stall()
         self._myView.show("Use the following with the appropriate argument \
 to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
 
@@ -90,7 +85,6 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         self._selectedRecord = None
         self._myView.show("Selected Option")
         self._representOption(self._selectedOption)
-        self._stall()
         self._myView.show("Use the following to set the option:\n+ on\n\
 + off\n")
 
@@ -200,7 +194,6 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
             self._myView.show("There is no option\n")
             self._enterNeutralState()
 
-    # SMELL: Long Method
     def do_text_load(self, arg):
         """
         Load records from a text file; depending on their IDs and the options,
@@ -208,66 +201,15 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         arg: The loaction of the text file
         """
         self._enterNeutralState()
-        try:
-            theFile = open(arg, 'r')
-            theLines = theFile.readlines()
-            theFile.close()
-            added = 0
-            report = ""
-            for i in range(len(theLines)):
-                data = ""
-                if 0 < len(theLines[i]) and theLines[i][-1] == '\n':
-                    data = theLines[i][0:-1]
-                else:
-                    data = theLines[i]
-                try:
-                    self._add(data)
-                except CustomException as e:
-                    report += "BAD LINE {}: {}\n".format(i + 1, str(e))
-                else:
-                    added += 1
-        except IOError as e:
-            self._myView.show("EXCEPTION: {}\n".format(str(e)))
-        else:
-            self._myView.show("Records Added: {}\nProblems: \n{}\n\
-".format(added, report))
-        self._stall()
+        Filer().textLoad(arg, self)
 
-    # SMELL: Long Method
     def do_text_save(self, arg):
         """
         Save records to a text file
         arg: The location of the text file
         Please specify a non existing file
         """
-        import os
-        if not os.path.isfile(arg):
-            try:
-                theFile = open(arg, 'w')
-                theLines = []
-                allRecords = self._theColl.getAllRecords()
-                total = len(allRecords)
-                for i in range(total):
-                    r = allRecords[i]
-                    asStr = "{} {} {} {} {} {}".format(r.getID(),
-                                                       r.getGender(),
-                                                       r.getAge(),
-                                                       r.getSales(),
-                                                       r.getBMI(),
-                                                       r.getIncome())
-                    if i < (total - 1):
-                        asStr += "\n"
-                    theLines.append(asStr)
-                theFile.writelines(theLines)
-                theFile.close()
-            except IOError as e:
-                self._myView.show("EXCEPTION: {}\n".format(str(e)))
-            else:
-                self._myView.show("Saved As Text")
-            self._stall()
-        else:
-            self._myView.show("Will not overwrite an existing file\n\
-Please, enter a new file when using serial_save\n")
+        Filer().textSave(arg, self)
         self._enterNeutralState()
 
     def do_serial_load(self, arg):
@@ -286,21 +228,7 @@ from that\n")
         Please specify a non existing file
         For instructions on loading serial data, please command serial_load
         """
-        import pickle
-        import os
-        if not os.path.isfile(arg):  # protection from overwriting files
-            try:
-                # with open(arg, 'wb') as f:
-                #     pickle.dump(self._theColl, f)
-                theFile = open(arg, 'wb')
-                pickle.dump(self._theColl, theFile)
-                theFile.close()
-                
-            except IOError as e:
-                self._myView.show("EXCEPTION: {}\n".format(str(e)))
-        else:
-            self._myView.show("Will not overwrite an existing file\n\
-Please, enter a new file when using serial_save\n")
+        Filer().serialSave(arg, self)
         self._enterNeutralState()
 
     def do_add_rec(self, arg):
@@ -321,7 +249,6 @@ Please, enter a new file when using serial_save\n")
             self._myView.show("EXCEPTION: {}\n".format(str(e)))
         else:
             self._myView.show("Record added\n")
-        self._stall()
 
     def do_edit_age(self, arg):
         """
@@ -424,3 +351,17 @@ Please, enter a new file when using serial_save\n")
         Special help
         """
         super(Controller, self).do_help(arg)
+
+    # As AbstractController
+
+    def getRecordCollection(self):
+        return self._theColl
+
+    def getAllRecords(self):
+        return self._theColl.getAllRecords()
+
+    def addRecordData(self, data):
+        self._add(data)
+
+    def show(self, message):
+        self._myView.show(message)

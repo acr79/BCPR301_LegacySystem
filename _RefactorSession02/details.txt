@@ -70,7 +70,7 @@ Testing these methods before and after refactoring will require the open()
  a binary I/O stream, and set os.path.isfile() to return the desired value
  depending on the situation. The I/O streams will be set in the test cases.
 
-Also, in keeping with the behaviour of the ERP program, a serial load can only
+Also, in keeping with the behaviour of the ERP, a serial load can only
  be done before construction of the Controller, which is in the main() method
  of RunMain module. Testing a serial load would have to include the importing
  of RunMain - a small modification has been done to the original class schema

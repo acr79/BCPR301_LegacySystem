@@ -5,6 +5,7 @@ from StringEnum import StringEnum
 from GlobalMethod import typeCheckStringERR
 from LimitedInt import LimitedInt
 
+
 class InvalidGenderException(CustomException):
 
     def __init__(self, theReason="Invalid Gender"):

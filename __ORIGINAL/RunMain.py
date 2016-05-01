@@ -6,6 +6,7 @@ from View import View
 from RecordCollection import RecordCollection
 from Record import Record
 
+
 def serialLoad(arg):
     report = ""
     import pickle
@@ -21,9 +22,11 @@ def serialLoad(arg):
         if isinstance(x, RecordCollection):
             report = "Serial load of record collection successful"
         else:
+            x = None
             report = "Failed to do serial load: No instance of record \
 collection"
     return (x, report)
+
 
 def viewImport(arg):
     report = ""
@@ -43,7 +46,8 @@ def viewImport(arg):
     except TypeError as e:
         report = "Failed to load AbstractView implementation: {}\
 ".format(str(e))
-    return (x, report)    
+    return (x, report)
+
 
 def main(run, arguments):
     global theController

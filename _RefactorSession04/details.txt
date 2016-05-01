@@ -1,0 +1,64 @@
+Smell: Swtich Statement
+Location: RunMain.py, LOC ~ 55 - 60
+
+Sample:
+        if a.upper()[0:5] == "COLL:":
+            existingColl, report = serialLoad(a[5:])
+            theReports.append(report)
+        elif a.upper()[0:5] == "VIEW:":
+            ViewClass, report = viewImport(a[5:])
+            theReports.append(report)
+
+The purpose of the switch statement is to decide what action, if any, is to be
+ taken based on the prefix of each string-element passed into
+ main(boolean, list) in the list. The programmer had used prefix codes to
+ allow the ERP to be extended with more optional-functions to be run upon
+ calling main(boolean, list), where sys.argv will be passed as list if
+ RunMain.py is run in cmd). If the prefix of a string-element is recognised by
+ the program, then an action is performed that will use the rest of that
+ string-element as information.
+
+So far, a couple of patterns are apparent. For identifying the associated
+ action, the prefix of a string is defined up to and including a colon letter
+ (:). The current, two optional actions that can get triggered with a
+ recognisable prefix both return a tuple of (data, string). The point
+ of having these two actions is that the data each returns is different to
+ another (different class, or may not have a class), and the string contains
+ details of how the action's flow went.
+
+The importance of this functionality in RunMain is that the optional actions
+ can be run before the Controller (of type cmd.Cmd) starts the CLI. As stated
+ before, these actions return data of interest (it might not be an
+ instantiated object), in order to affect something else (by assignment to
+ some other variable). Currently, the serial load is designed to return an
+ instance of RecordCollection, however the view import is designed to return
+ a class that implements AbstractView (no instance). Alternative/exception
+ flows would have the functions return None. The view import function could be
+ altered to return an instance of AbstractView, but this is probably not even
+ an issue for refactoring the switch statement.
+
+Because the return values of these actions (and like future actions) are not
+ predictable, it is best to define a separate class for each action, and have
+ these classes abide to an interface (will be abstract class in Python). When
+ the interface method gets called, the class object will perform its
+ respective action. Now, calling that common method will return a string
+ report, and that is all; what happens is that an attribute of the class
+ object may or may not get altered from the running of the action.
+
+As a draft conclusion, the data of interest is not returned in the method
+ call, yet the data of interest can be retrieved via a getter method.
+ Specific to the RunMain module, this retrieval would be performed after
+ running actions based on listed arguments.
+
+The interface would be simple:
+
+class AbstractAction(metaclass=ABCMeta):
+    @abstractmethod
+    def doAction(self, strData):
+        pass
+
+ there will not be an abstract method for data retrieval, as that will be
+ class specific
+
+So, there will be a collection of AbstractActions. The composite will 
+

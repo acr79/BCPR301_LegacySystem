@@ -1,7 +1,9 @@
 from AbstractView import AbstractView
 
+
 def getViewClass():
     return View
+
 
 class DudViewPlot(object):
 
@@ -12,7 +14,7 @@ class DudViewPlot(object):
         pass
 
     def show(self, *args):
-       pass
+        pass
 
 
 try:
@@ -28,9 +30,6 @@ class View(AbstractView):
 
     def show(self, message):
         print(message)
-
-    def stall(self):
-        input("- Enter to continue -")
 
     def barChart(self, labels, values):
         self._viewPlot.bar(range(len(labels)), values)

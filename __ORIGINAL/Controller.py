@@ -5,6 +5,7 @@ from Option import Option
 from AbstractView import AbstractView
 from GlobalMethod import safeInt
 
+
 class ViewException(CustomException):
 
     def __init__(self, theReason="Not a View"):
@@ -35,8 +36,6 @@ used when adding records")
 ID is specified when adding a record, the original record with the same \
 ID is removed (this overpowers auto ID)", "No records will be removed \
 when adding records")
-        self._options["STALL"] = Option("Stall", "ERP view stalls (waits for \
-your acknowledgement) in some activities", "ERP view flows naturally")
         if (newRecordColl is not None and
                 isinstance(newRecordColl, RecordCollection)):
             self._theColl = newRecordColl
@@ -55,10 +54,6 @@ your acknowledgement) in some activities", "ERP view flows naturally")
                                     self._options["OVERWRITE"].isOn())
         else:
             raise InsufficientArgumentsException()
-
-    def _stall(self):
-        if self._options["STALL"].isOn():
-            self._myView.stall()
 
     def _representRecord(self, theRecord):
         self._myView.show("ID: {}\nGENDER: {}\nAGE: {}\nSALES: {}\nBMI: {}\
@@ -82,7 +77,6 @@ your acknowledgement) in some activities", "ERP view flows naturally")
         self._selectedOption = None
         self._myView.show("Selected Record")
         self._representRecord(self._selectedRecord)
-        self._stall()
         self._myView.show("Use the following with the appropriate argument \
 to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
 
@@ -90,7 +84,6 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         self._selectedRecord = None
         self._myView.show("Selected Option")
         self._representOption(self._selectedOption)
-        self._stall()
         self._myView.show("Use the following to set the option:\n+ on\n\
 + off\n")
 
@@ -231,7 +224,6 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         else:
             self._myView.show("Records Added: {}\nProblems: \n{}\n\
 ".format(added, report))
-        self._stall()
 
     # SMELL: Long Method
     def do_text_save(self, arg):
@@ -264,10 +256,9 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
                 self._myView.show("EXCEPTION: {}\n".format(str(e)))
             else:
                 self._myView.show("Saved As Text")
-            self._stall()
         else:
             self._myView.show("Will not overwrite an existing file\n\
-Please, enter a new file when using serial_save\n")
+Please, enter a new file when using text_save\n")
         self._enterNeutralState()
 
     def do_serial_load(self, arg):
@@ -295,7 +286,7 @@ from that\n")
                 theFile = open(arg, 'wb')
                 pickle.dump(self._theColl, theFile)
                 theFile.close()
-                
+
             except IOError as e:
                 self._myView.show("EXCEPTION: {}\n".format(str(e)))
         else:
@@ -321,7 +312,6 @@ Please, enter a new file when using serial_save\n")
             self._myView.show("EXCEPTION: {}\n".format(str(e)))
         else:
             self._myView.show("Record added\n")
-        self._stall()
 
     def do_edit_age(self, arg):
         """

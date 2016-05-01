@@ -2,10 +2,12 @@ from CustomException import CustomException
 from StringEnum import StringEnum
 from GlobalMethod import typeCheckStringERR
 
+
 class InvalidGenderException(CustomException):
 
     def __init__(self, theReason="Invalid Gender"):
         super(InvalidGenderException, self).__init__(theReason)
+
 
 # SMELL: Duplicate Code
 # SMELL? Primitive Obsession
@@ -18,6 +20,7 @@ class InvalidGenderException(CustomException):
 # # _age : SpecialInt
 # # _sales : SpecialInt
 # # _income : SpecialInt
+
 
 class Record(object):
 

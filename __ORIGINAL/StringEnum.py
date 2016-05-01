@@ -1,6 +1,7 @@
 from CustomException import CustomException
 from GlobalMethod import typeCheckStringERR
 
+
 class EnumException(CustomException):
 
     def __init__(self, theReason="Enum not Committed"):
