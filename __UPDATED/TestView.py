@@ -19,8 +19,9 @@ def clearLog():
 class TestView(AbstractView):
 
     def show(self, message):
-        global theLog
-        theLog.append(message)
+        if message is not None:
+            global theLog
+            theLog.append(message)
 
     def barChart(self, *args):
         pass

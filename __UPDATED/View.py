@@ -29,7 +29,8 @@ class View(AbstractView):
         self._viewPlot = globals()["viewPlot"]
 
     def show(self, message):
-        print(message)
+        if message is not None:
+            print(message)
 
     def barChart(self, labels, values):
         self._viewPlot.bar(range(len(labels)), values)
