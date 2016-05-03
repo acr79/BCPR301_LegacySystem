@@ -1,4 +1,0 @@
-These modules have been adapted from the original ERP.
-
-Modifications done (such as carefully reducing encapsulation) are to support
- testing.

@@ -1,10 +1,22 @@
 import cmd
+
 from CustomException import CustomException
+from Record import Record
 from RecordCollection import RecordCollection
 from Option import Option
 from Filer import Filer
+
 from AbstractView import AbstractView
 from AbstractController import AbstractController
+
+from AbstractObjectInfo import AbstractObjectInfo
+from OptionObjectInfo import OptionObjectInfo
+from RecordObjectInfo import RecordObjectInfo
+
+from AbstractObjectCaller import AbstractObjectCaller
+import OptionObjectCaller
+import RecordObjectCaller
+
 from GlobalMethod import safeInt
 
 
@@ -20,7 +32,19 @@ class InsufficientArgumentsException(CustomException):
         super(InsufficientArgumentsException, self).__init__(theReason)
 
 
-class Controller(cmd.Cmd, AbstractController):
+class Controller(cmd.Cmd, AbstractController, AbstractObjectInfo):
+
+    _autoid_onStr = "If an invalid or duplicate ID is specified when adding \
+a record, that record is assigned an ID automatically (a blank ID is invalid)"
+    _autoid_offStr = "No automatic IDs will be used when adding records"
+    _overwrite_onStr = "If a duplicate ID is specified when adding a \
+record, the original record with the same ID is removed (this overpowers \
+auto ID)"
+    _overwrite_offStr = "No records will be removed when adding records"
+    _record_selectedStr = "Selected Record"
+    _record_unselectedStr = "No record selected"
+    _option_selectedStr = "Selected Option"
+    _option_unselectedStr = "No option selected"
 
     def __init__(self, newView, newRecordColl=None):
         super(Controller, self).__init__()
@@ -42,9 +66,10 @@ when adding records")
             self._theColl = newRecordColl
         else:
             self._theColl = RecordCollection()
-        self._selectedRecord = None
-        self._selectedOption = None
+        self._selectedObject = self
         self._myView.show("EMPLOYEE RECORD PROGRAM - ")
+
+    # Protected
 
     def _add(self, data):
         recArgs = data.split(" ")
@@ -56,41 +81,22 @@ when adding records")
         else:
             raise InsufficientArgumentsException()
 
-    def _representRecord(self, theRecord):
-        self._myView.show("ID: {}\nGENDER: {}\nAGE: {}\nSALES: {}\nBMI: {}\
-\nINCOME: {}\n".format(theRecord.getID(), theRecord.getGender(),
-                       theRecord.getAge(), theRecord.getSales(),
-                       theRecord.getBMI(), theRecord.getIncome()))
+    def _showSelectedObjectInfo(self, headerStr):
+        self._myView.show(headerStr)
+        self._myView.show(self._selectedObject.getAsString())
+        self._myView.show(self._selectedObject.getFunctionDesc())
 
-    def _representOption(self, theOption):
-        state = "OFF"
-        if theOption.isOn():
-            state = "ON"
-        self._myView.show("{}: TURNED {}\n. . .\nON: {}\nOFF: {}\n\n\
-".format(theOption.getName(), state, theOption.getOnDescription(),
-         theOption.getOffDescription()))
+    def _callSelectedObject(self, theObjectCaller, mainMessage, excMessage):
+        trial = self._selectedObject.getClassObject()
+        try:
+            theObjectCaller.setObject(trial)
+            theObjectCaller.callObject()
+            self._showSelectedObjectInfo(mainMessage)
+        except CustomException as e:
+            self._selectedObject = self
+            self._myView.show(excMessage)
 
-    def _representERP(self):
-        self._myView.show("Records in ERP: {}\
-".format(len(self._theColl.getAllRecords())))
-
-    def _enterRecordSelectedState(self):
-        self._selectedOption = None
-        self._myView.show("Selected Record")
-        self._representRecord(self._selectedRecord)
-        self._myView.show("Use the following with the appropriate argument \
-to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
-
-    def _enterOptionSelectedState(self):
-        self._selectedRecord = None
-        self._myView.show("Selected Option")
-        self._representOption(self._selectedOption)
-        self._myView.show("Use the following to set the option:\n+ on\n\
-+ off\n")
-
-    def _enterNeutralState(self):
-        self._selectedRecord = None
-        self._selectedOption = None
+    # Public
 
     def do_view_records(self, arg):
         """
@@ -108,12 +114,217 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         """
         View the options and their purpose
         """
-        result = ""
         for code in self._options:
+            theOption = OptionSelectable(self._options[code], "")
             self._myView.show("Option Code: {}".format(code))
-            self._representOption(self._options[code])
+            self._myView.show(theOption.getAsString())
 
-    def do_graphic_gender_pie_chart(self, arg):
+    def do_select_rec(self, arg):
+        """
+        Select a record by ID, for inspection and editing
+        arg: The ID of the existing record
+
+        """
+        trial = self._theColl.getRecord(arg)
+        if trial is not None:
+            self._selectedObject = RecordObjectInfo(trial, "Use the \
+following with the appropriate argument to edit the record:\n+ edit_age\n+ \
+edit_sales\n+ edit_bmi\n+ edit_income\n")
+            self._showSelectedObjectInfo(Controller._record_selectedStr)
+        else:
+            self._myView.show("There is no record with that ID\n")
+            self._selectedObject = self
+
+    def do_select_option(self, arg):
+        """
+        Select an option for turning on/off, and seeing what it will do
+        arg: The option code
+        For option codes, please command view_options
+        """
+        trial = arg.upper()
+        if trial in self._options:
+            self._selectedObject = OptionObjectInfo(self._options[trial], "\
+Use the following to set the option:\n+ on\n+ off\n")
+            self._showSelectedObjectInfo(Controller._option_selectedStr)
+        else:
+            self._myView.show("There is no option\n")
+            self._selectedObject = self
+
+    def do_text_load(self, arg):
+        """
+        Load records from a text file; depending on their IDs and the options,
+        ERP will attempt to append all records to the collection
+        arg: The loaction of the text file
+        """
+        self._selectedObject = self
+        Filer().textLoad(arg, self)
+
+    def do_text_save(self, arg):
+        """
+        Save records to a text file
+        arg: The location of the text file
+        Please specify a non existing file
+        """
+        Filer().textSave(arg, self)
+        self._selectedObject = self
+
+    def do_serial_load(self, arg):
+        """
+        Instructions for loading a serial record collection as the ERP starts
+        """
+        myView.show("++ APPLIES TO SERIAL COLLECTION, NOT TEXT ++\n\
+When starting ERP via the command line, enter the argument\
+\n    COLL:[file location]\nERP will then attempt to load the collection \
+from that\n")
+
+    def do_serial_save(self, arg):
+        """
+        Save records as serial data
+        arg: The location of the text file
+        Please specify a non existing file
+        For instructions on loading serial data, please command serial_load
+        """
+        Filer().serialSave(arg, self)
+        self._selectedObject = self
+
+    def do_add_rec(self, arg):
+        """
+        Add a record to the collection
+        Separate each argument with a space
+        arg 1: ID [A-Z][0-9]{3}
+        arg 2: Gender (M|F)
+        arg 3: Age [0-9]{2}
+        arg 4: Sales [0-9]{3}
+        arg 5: BMI (Normal|Overweight|Obesity|Underweight)
+        arg 6: Income [0-9]{2,3}
+        """
+        self._selectedObject = self
+        try:
+            self._add(arg)
+        except CustomException as e:
+            self._myView.show("EXCEPTION: {}\n".format(str(e)))
+        else:
+            self._myView.show("Record added\n")
+
+    def do_edit_age(self, arg):
+        """
+        A record must be selected
+        Change the age of the record
+        arg: [0-9]{2}
+        """
+        theObjectCaller = RecordObjectCaller.ROC_SetAge(arg)
+        self._callSelectedObject(theObjectCaller,
+                                 Controller._record_selectedStr,
+                                 Controller._record_unselectedStr)
+
+    def do_edit_sales(self, arg):
+        """
+        A record must be selected
+        Change the sales of the record
+        arg: [0-9]{3}
+        """
+        theObjectCaller = RecordObjectCaller.ROC_SetSales(arg)
+        self._callSelectedObject(theObjectCaller,
+                                 Controller._record_selectedStr,
+                                 Controller._record_unselectedStr)
+
+    def do_edit_bmi(self, arg):
+        """
+        A record must be selected
+        Change the BMI of the record
+        arg: (Normal|Overweight|Obesity|Underweight)
+        """
+        theObjectCaller = RecordObjectCaller.ROC_SetBMI(arg)
+        self._callSelectedObject(theObjectCaller,
+                                 Controller._record_selectedStr,
+                                 Controller._record_unselectedStr)
+
+    def do_edit_income(self, arg):
+        """
+        A record must be selected
+        Change the income of the record
+        arg: [0-9]{3}
+        """
+        theObjectCaller = RecordObjectCaller.ROC_SetIncome(arg)
+        self._callSelectedObject(theObjectCaller,
+                                 Controller._record_selectedStr,
+                                 Controller._record_unselectedStr)
+
+    def do_on(self, arg):
+        """
+        An option must be selected
+        Turn the option on
+        """
+        theObjectCaller = OptionObjectCaller.OOC_TurnOn()
+        self._callSelectedObject(theObjectCaller,
+                                 Controller._option_selectedStr,
+                                 Controller._option_unselectedStr)
+
+    def do_off(self, arg):
+        """
+        An option must be selected
+        Turn the option off
+        """
+        theObjectCaller = OptionObjectCaller.OOC_TurnOff()
+        self._callSelectedObject(theObjectCaller,
+                                 Controller._option_selectedStr,
+                                 Controller._option_unselectedStr)
+
+    def do_neutral(self, arg):
+        """
+        Put the control of ERP in a neutral state
+        """
+        self._selectedObject = self
+        self._showSelectedObjectInfo(None)
+        # self._enterNeutralState()
+        # self._representERP()
+
+    def do_exit(self, arg):
+        """
+        If a record or an option is selected, ERP enters a neutral state
+        Otherwise, ERP ends
+        """
+        if self._selectedObject is self:
+            self._myView.show("END")
+            return True
+        else:
+            self._selectedObject = self
+            self._showSelectedObjectInfo(None)
+
+    def do_help(self, arg):
+        """
+        Special help
+        """
+        super(Controller, self).do_help(arg)
+
+    # As AbstractController
+
+    def getRecordCollection(self):
+        return self._theColl
+
+    def getAllRecords(self):
+        return self._theColl.getAllRecords()
+
+    def addRecordData(self, data):
+        self._add(data)
+
+    def show(self, message):
+        self._myView.show(message)
+
+    # As AbstractObjectInfo
+
+    def getAsString(self):
+        return "Records in ERP: {}".format(len(self._theColl.getAllRecords()))
+
+    def getFunctionDesc(self):
+        return ""
+
+    def getClassObject(self):
+        return self
+
+    # Graphic
+
+    def do_graphic_gender_pie_chart(self, arg):  # pragma: no cover
         """
         Graphic: Pie chart representing gender ratio of employee records
         """
@@ -128,7 +339,7 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         self._myView.pieChart([("Males", mCount), ("Females", fCount)])
 
     # SMELL: Long Method
-    def do_graphic_age_bar_chart(self, arg):
+    def do_graphic_age_bar_chart(self, arg):  # pragma: no cover
         """
         Graphic: Bar chart representing number of people per age group
         arg1: Lowest age (default 0)
@@ -165,203 +376,3 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
             if lastLimit is not None:
                 ageCount[lastLimit] += 1
         self._myView.barChart(limits, ageCount)
-
-    def do_select_rec(self, arg):
-        """
-        Select a record by ID, for inspection and editing
-        arg: The ID of the existing record
-
-        """
-        trial = self._theColl.getRecord(arg)
-        if trial is not None:
-            self._selectedRecord = trial
-            self._enterRecordSelectedState()
-        else:
-            self._myView.show("There is no record with that ID\n")
-            self._enterNeutralState()
-
-    def do_select_option(self, arg):
-        """
-        Select an option for turning on/off, and seeing what it will do
-        arg: The option code
-        For option codes, please command view_options
-        """
-        trial = arg.upper()
-        if trial in self._options:
-            self._selectedOption = self._options[trial]
-            self._enterOptionSelectedState()
-        else:
-            self._myView.show("There is no option\n")
-            self._enterNeutralState()
-
-    def do_text_load(self, arg):
-        """
-        Load records from a text file; depending on their IDs and the options,
-        ERP will attempt to append all records to the collection
-        arg: The loaction of the text file
-        """
-        self._enterNeutralState()
-        Filer().textLoad(arg, self)
-
-    def do_text_save(self, arg):
-        """
-        Save records to a text file
-        arg: The location of the text file
-        Please specify a non existing file
-        """
-        Filer().textSave(arg, self)
-        self._enterNeutralState()
-
-    def do_serial_load(self, arg):
-        """
-        Instructions for loading a serial record collection as the ERP starts
-        """
-        myView.show("++ APPLIES TO SERIAL COLLECTION, NOT TEXT ++\n\
-When starting ERP via the command line, enter the argument\
-\n    COLL:[file location]\nERP will then attempt to load the collection \
-from that\n")
-
-    def do_serial_save(self, arg):
-        """
-        Save records as serial data
-        arg: The location of the text file
-        Please specify a non existing file
-        For instructions on loading serial data, please command serial_load
-        """
-        Filer().serialSave(arg, self)
-        self._enterNeutralState()
-
-    def do_add_rec(self, arg):
-        """
-        Add a record to the collection
-        Separate each argument with a space
-        arg 1: ID [A-Z][0-9]{3}
-        arg 2: Gender (M|F)
-        arg 3: Age [0-9]{2}
-        arg 4: Sales [0-9]{3}
-        arg 5: BMI (Normal|Overweight|Obesity|Underweight)
-        arg 6: Income [0-9]{2,3}
-        """
-        self._enterNeutralState()
-        try:
-            self._add(arg)
-        except CustomException as e:
-            self._myView.show("EXCEPTION: {}\n".format(str(e)))
-        else:
-            self._myView.show("Record added\n")
-
-    def do_edit_age(self, arg):
-        """
-        A record must be selected
-        Change the age of the record
-        arg: [0-9]{2}
-        """
-        if self._selectedRecord is not None:
-            self._selectedRecord.setAge(int(arg))
-            self._enterRecordSelectedState()
-        else:
-            self._myView.show("No record selected")
-            self._enterNeutralState()
-
-    def do_edit_sales(self, arg):
-        """
-        A record must be selected
-        Change the sales of the record
-        arg: [0-9]{3}
-        """
-        if self._selectedRecord is not None:
-            self._selectedRecord.setSales(int(arg))
-            self._enterRecordSelectedState()
-        else:
-            self._myView.show("No record selected")
-            self._enterNeutralState()
-
-    def do_edit_bmi(self, arg):
-        """
-        A record must be selected
-        Change the BMI of the record
-        arg: (Normal|Overweight|Obesity|Underweight)
-        """
-        if self._selectedRecord is not None:
-            self._selectedRecord.setBMI(arg)
-            self._enterRecordSelectedState()
-        else:
-            self._myView.show("No record selected")
-            self._enterNeutralState()
-
-    def do_edit_income(self, arg):
-        """
-        A record must be selected
-        Change the income of the record
-        arg: [0-9]{3}
-        """
-        if self._selectedRecord is not None:
-            self._selectedRecord.setIncome(int(arg))
-            self._enterRecordSelectedState()
-        else:
-            self._myView.show("No record selected")
-            self._enterNeutralState()
-
-    def do_on(self, arg):
-        """
-        An option must be selected
-        Turn the option on
-        """
-        if self._selectedOption is not None:
-            self._selectedOption.turnOn()
-            self._enterOptionSelectedState()
-        else:
-            self._myView.show("No option selected")
-            self._enterNeutralState()
-
-    def do_off(self, arg):
-        """
-        An option must be selected
-        Turn the option off
-        """
-        if self._selectedOption is not None:
-            self._selectedOption.turnOff()
-            self._enterOptionSelectedState()
-        else:
-            self._myView.show("No option selected")
-            self._enterNeutralState()
-
-    def do_neutral(self, arg):
-        """
-        Put the control of ERP in a neutral state
-        """
-        self._enterNeutralState()
-        self._representERP()
-
-    def do_exit(self, arg):
-        """
-        If a record or an option is selected, ERP enters a neutral state
-        Otherwise, ERP ends
-        """
-        if (self._selectedRecord is not None or
-                self._selectedOption is not None):
-            self._enterNeutralState()
-            self._representERP()
-        else:
-            self._myView.show("END")
-            return True
-
-    def do_help(self, arg):
-        """
-        Special help
-        """
-        super(Controller, self).do_help(arg)
-
-    # As AbstractController
-
-    def getRecordCollection(self):
-        return self._theColl
-
-    def getAllRecords(self):
-        return self._theColl.getAllRecords()
-
-    def addRecordData(self, data):
-        self._add(data)
-
-    def show(self, message):
-        self._myView.show(message)

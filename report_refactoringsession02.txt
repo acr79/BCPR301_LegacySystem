@@ -1,0 +1,31 @@
+SESSION 2
+
+Unit test: UT_FilerFunctionality.py
+
+Smell name: Large Class
+
+Location: __ORIGINAL Controller.py Controller
+    Functions at LOC 197, 229, 273
+
+Reasons:
+Targeting only the functions at the LOC stated above would only be a partial
+ solution to solving the large class problem. Regardless, if anything was to
+ removed from Controller, it would be the filer functionality first, and so
+ this was done by extracting class.
+
+https://sourcemaking.com/refactoring/extract-class
+As an inheritor of cmd.Cmd, Controller was originally designed to have many
+ public methods for ERP functionality; so delegation was used, and creating a
+ Filer class to deal with just the filer functionality was the action that was
+ taken.
+
+Refactoring review:
+- To maintain the calls to other functions such as trying to comprehend
+   strings and showing small reports that were happening in the Controller's
+   original filer functions was a challenge, which ultimately had to be solved
+   by Controller implementing an interface (AbstractController). All for the
+   sake of other Controller functionality to happen as Filer did the filer
+   tasks.
+- Making the traditional Controller be composed of at least one other class
+   might have fully solved the large class problem, but at the least
+   refactoring session 5 has reduced some protected functions.

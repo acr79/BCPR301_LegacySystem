@@ -112,7 +112,7 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
             self._myView.show("Option Code: {}".format(code))
             self._representOption(self._options[code])
 
-    def do_graphic_gender_pie_chart(self, arg):
+    def do_graphic_gender_pie_chart(self, arg):  # pragma: no cover
         """
         Graphic: Pie chart representing gender ratio of employee records
         """
@@ -127,7 +127,7 @@ to edit the record:\n+ edit_age\n+ edit_sales\n+ edit_bmi\n+ edit_income\n")
         self._myView.pieChart([("Males", mCount), ("Females", fCount)])
 
     # SMELL: Long Method
-    def do_graphic_age_bar_chart(self, arg):
+    def do_graphic_age_bar_chart(self, arg):  # pragma: no cover
         """
         Graphic: Bar chart representing number of people per age group
         arg1: Lowest age (default 0)
